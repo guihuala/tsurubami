@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>可爱的盒餐</title>
+    <link rel="shortcut icon" href="//images.shoutwiki.com/lenen/6/64/Favicon.ico">
+    <link rel="stylesheet" href="//at.alicdn.com/t/c/font_4437936_ccud3dhdrqo.css">
+    <style>
+        .function {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 20%;
+            left: 35%;
+        }
+
+        .title {
+            color: #ffffff;
+            font-size: 50px;
+            font-weight: 900;
+        }
+
+
+        .funcbtn-countainer {
+            display: flex;
+
+        }
+
+        .funcbtn {
+            background: #4d4d4d;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 10px;
+            box-shadow: #c3cddf 0px 5px 10px;
+            transition: transform 0.5s;
+        }
+
+        .funcbtn:hover {
+            transform: scale(1.2)translate(0, -10px);
+        }
+    </style>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #aaaaaa;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+
+        #toolbar {
+            width: 300px;
+            height: 90px;
+            position: fixed;
+            bottom: 0;
+        }
+
+        #toolbar img {
+            width: 300px;
+            height: 300px;
+            position: absolute;
+            bottom: -210px;
+            transition: bottom 0.5s;
+            animation: float 2s infinite;
+        }
+
+        #float {
+            width: 300px;
+            height: 300px;
+            position: absolute;
+            bottom: -210px;
+            transition: bottom 0.5s;
+            animation: float 1s infinite;
+            z-index: 1;
+        }
+
+        .background {
+            width: 200px;
+            height: 200px;
+            position: absolute;
+            transition: bottom 0.5s;
+            left: 50px;
+            bottom: -300px;
+            border-radius: 50%;
+            background: linear-gradient(180deg, #242424 0%, #4d4d4d 100%);
+            box-shadow: #d8e6ff 0px 5px 20px, #ffffff 0¥5px 0px 10px;
+            z-index: -2;
+            animation: float 3s infinite;
+        }
+
+        #toolbar:hover img {
+            bottom: 0;
+        }
+
+        #toolbar:hover {
+            height: 300px;
+        }
+
+        #toolbar:hover #float {
+            bottom: 0;
+        }
+
+        #toolbar:hover #buttonbar {
+            bottom: 0;
+        }
+
+        #toolbar:hover .background {
+            bottom: 0px;
+        }
+
+        #dialogue-buble {
+            position: absolute;
+            width: 200px;
+            height: 100px;
+            padding: 10px;
+            background-color: rgb(74, 74, 74);
+            color: #ffffff;
+            border-radius: 10px;
+            box-shadow: #c3cddf 0px 5px 10px;
+            bottom: 100%;
+            right: 0;
+            visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: -2;
+            animation: float 3s infinite;
+        }
+
+        .dialog-content {
+            display: none;
+        }
+
+        .dialog-content.active {
+            display: block;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            50% {
+                transform: translate(0, -10px);
+            }
+
+            100% {
+                transform: translate(0, 0);
+            }
+        }
+    </style>
+
+    <style>
+        #button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 10px;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            justify-content: center;
+            box-shadow: #c3cddf 0px 5px 10px;
+            z-index: 2;
+            animation: float 5s infinite;
+        }
+
+        #button span {
+            color: rgb(255, 255, 255);
+            font-size: 30px;
+            font-weight: bold;
+            line-height: 40px;
+        }
+
+        #button:hover {
+            box-shadow: #dee9ff 0px 5px 10px;
+        }
+
+        #button span:hover {
+            color: #ffefb562;
+        }
+
+        #buttonbar {
+            display: flex;
+            flex-wrap: wrap;
+            position: absolute;
+            right: -50px;
+            bottom: -210px;
+            transition: bottom 0.5s;
+        }
+    </style>
+
+</head>
+
+<body>
+
+
+    <div class="function">
+        <div class="title">
+            <h1>Function.</h1>
+        </div>
+        <div class="funcbtn-countainer">
+            <div class="funcbtn"></div>
+            <div class="funcbtn"></div>
+            <div class="funcbtn"></div>
+            <div class="funcbtn"></div>
+        </div>
+
+    </div>
+    <div id="toolbar">
+
+        <div id="dialogue-buble">
+            <div id="dialogContent">你是何人？</div>
+        </div>
+
+        <div id="float"><img src="hecan-float.png" alt=""></div>
+        <img src="hecan.png" alt="Image">
+        <div id="buttonbar">
+            <div id="button" onclick="emitElement()" style="background-color: rgb(74, 74, 74);">
+                <span class="iconfont icon-xihuan"></span>
+            </div>
+            <div id="button" onclick="showBuble()" onmouseout="startTimer()"
+                style="background-color: rgb(113, 92, 92);">
+                <span class="iconfont icon-xiaoxi1"></span>
+            </div>
+            <div id="button" onclick="showDialog()" style="background-color: rgb(154, 100, 100);">
+                <span class="iconfont icon-shuoming"></span>
+            </div>
+        </div>
+        <div id="container"></div>
+        <div class="background"></div>
+
+    </div>
+
+    <div id="dialog" style="position: absolute;
+        display:  none; border: 2px solid rgb(74, 74, 74);
+        background-color: rgb(74, 74, 74);
+        padding: 10px;border-radius: 10px;box-shadow: #c3cddf 0px 5px 10px;">
+        <div id="dialogHeader" style="cursor: move; color: #ffffff;padding: 10px;">
+            <span class="iconfont icon-quxiao1" onclick="hideDialog()"></span> 公告
+        </div>
+        <div style="background-color: #ffffff;padding: 10px;color: rgb(74, 74, 74);border-radius: 5px;">
+            请多多支持勇敢外出打拼的无现乃鸟！<br>
+            请多多支持铝制木箱喵！
+        </div>
+    </div>
+
+    <script>
+        var dialog = document.getElementById('dialog');
+        var dialogHeader = document.getElementById('dialogHeader');
+
+        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+        dialogHeader.onmousedown = dragMouseDown;
+
+        function showDialog() {
+            dialog.style.display = 'block';
+        }
+
+        function dragMouseDown(e) {
+            e = e || window.event;
+            e.preventDefault();
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+        }
+
+        function elementDrag(e) {
+            e = e || window.event;
+            e.preventDefault();
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+
+            var newTop = dialog.offsetTop - pos2;
+            var newLeft = dialog.offsetLeft - pos1;
+
+            // 获取窗口的宽度和高度
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+
+            // 确保 dialog 元素不会超出窗口的边界
+            if (newTop >= 0 && newTop <= winHeight - dialog.offsetHeight) {
+                dialog.style.top = newTop + "px";
+            }
+            if (newLeft >= 0 && newLeft <= winWidth - dialog.offsetWidth) {
+                dialog.style.left = newLeft + "px";
+            }
+        }
+
+        function closeDragElement() {
+            document.onmouseup = null;
+            document.onmousemove = null;
+        }
+
+        function hideDialog() {
+            var dialog = document.getElementById('dialog');
+            dialogContent.textContent = messages[counter % messages.length];
+            counter++;
+            dialog.style.display = 'none';
+        }
+
+        var counter = 0;
+        var isOpen = false
+        let closeTimer = null;
+        var messages = ['Who are you——？', '有秘密的神主最洋气♪', '我可是天才神主呢'];
+        var dialogueContent = document.getElementById('dialogContent');
+
+        function showBuble() {
+            var buble = document.getElementById('dialogue-buble');
+            buble.style.visibility = 'visible';
+            dialogueContent.textContent = messages[counter % messages.length];
+            counter++;
+            isOpen = true;
+        }
+
+        function startTimer() {
+            if (closeTimer) {
+                clearTimeout(closeTimer);
+            }
+
+            timer = setTimeout(function () {
+                var buble = document.getElementById('dialogue-buble');
+                buble.style.visibility = 'hidden';
+                isOpen = false;
+            }, 2000);
+        }
+    </script>
+
+    <script>
+        const container = document.getElementById('container');
+        let elements = [];
+
+        function createRandomAngleAndVelocity() {
+            const angle = Math.random() * -180;
+            const velocity = Math.random() * 20 + 1000;
+            return { angle, velocity };
+        }
+
+        function emitElement() {
+            if (elements.length < 100) {
+                const newElement = document.createElement('div');
+                newElement.classList.add('element');
+                newElement.style.left = '10%';
+                newElement.style.top = '75%';
+
+                container.appendChild(newElement);
+                elements.push(newElement);
+
+                const { angle, velocity } = createRandomAngleAndVelocity();
+                const radian = angle * (Math.PI / 180); // 角度转弧度
+                const dx = Math.cos(radian) * velocity;
+                const dy = Math.sin(radian) * velocity;
+
+                newElement.animate([
+                    { transform: 'translate(0, 0)' },
+                    { transform: `translate(${dx}px, ${dy}px)` }
+                ], {
+                    duration: 1000,
+                    fill: 'forwards'
+                });
+
+                setTimeout(() => {
+                    container.removeChild(newElement);
+                    elements = elements.filter(el => el !== newElement);
+                }, 1000);
+            }
+        }
+
+        emitButton.addEventListener('click', emitElement);
+    </script>
+
+    <style>
+        #container {
+            position: relative;
+            height: 200px;
+        }
+
+        .element {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.878);
+            box-shadow: 0px 0px 20px rgb(74, 74, 74), 0 0 10px rgb(255, 255, 255);
+            border-radius: 50%;
+            z-index: -1;
+        }
+    </style>
+</body>
+
+</html>
