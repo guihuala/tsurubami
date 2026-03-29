@@ -10,12 +10,14 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "label": "main",
         "title": "tsurubami",
-        "width": 320,
-        "height": 320,
+        "width": 380,
+        "height": 380,
+        "backgroundColor": "#00000000",
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,

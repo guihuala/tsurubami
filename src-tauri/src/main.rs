@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 use tauri::{AppHandle, Manager, PhysicalPosition, Runtime, WebviewWindow};
+use tauri::utils::config::Color;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct StoredWindowPosition {
@@ -120,6 +121,7 @@ fn main() {
     tauri::Builder::default()
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_background_color(Some(Color(0, 0, 0, 0)));
                 restore_position(&window);
             }
             Ok(())

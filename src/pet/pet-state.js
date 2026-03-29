@@ -1,33 +1,6 @@
-import { PET_BEHAVIOR_CONFIG } from './pet-config.js';
-
-const PET_STATES = {
-  IDLE: 'idle',
-  MOVE: 'move',
-  TALK: 'talk',
-  SLEEP: 'sleep'
-};
-
-function randomBetween(min, max) {
-  return Math.round(min + Math.random() * (max - min));
-}
-
-function pickWeightedState(transitions) {
-  const total = transitions.reduce((sum, item) => sum + item.weight, 0);
-  let cursor = Math.random() * total;
-
-  for (const item of transitions) {
-    cursor -= item.weight;
-    if (cursor <= 0) {
-      return item.state;
-    }
-  }
-
-  return transitions[transitions.length - 1]?.state ?? PET_STATES.IDLE;
-}
-
-function cloneTransitions(transitions) {
-  return transitions.map((item) => ({ ...item }));
-}
+import { PET_BEHAVIOR_CONFIG, PET_STATES } from './pet-config.js';
+import { resolveNextPetState } from './pet-behavior.js';
+import { randomBetween } from '../utils/random.js';
 
 export class PetStateManager {
   #config;
@@ -36,9 +9,18 @@ export class PetStateManager {
   #listeners = new Set();
   #paused = false;
   #lastInteractionAt = Date.now();
+  #timeContextProvider;
+  #reminderContextProvider;
 
-  constructor(config = PET_BEHAVIOR_CONFIG) {
+  constructor({
+    config = PET_BEHAVIOR_CONFIG,
+    getTimeContext,
+    getReminderContext
+  } = {}) {
     this.#config = config;
+    this.#timeContextProvider = getTimeContext ?? (() => ({ period: 'afternoon', isLateNight: false }));
+    this.#reminderContextProvider =
+      getReminderContext ?? (() => ({ nextReminder: null, lastReminderAt: null }));
   }
 
   get currentState() {
@@ -71,21 +53,13 @@ export class PetStateManager {
     this.#scheduleNext(this.#resolveDuration(this.#currentState));
   }
 
-  markInteraction() {
-    this.#lastInteractionAt = Date.now();
-
-    if (this.#currentState === PET_STATES.SLEEP) {
-      this.changeState(PET_STATES.TALK, { duration: this.#resolveDuration(PET_STATES.TALK) });
-    }
+  markInteraction(at = Date.now()) {
+    this.#lastInteractionAt = at;
   }
 
   subscribe(listener) {
     this.#listeners.add(listener);
-    listener({
-      state: this.#currentState,
-      previousState: null,
-      idleTimeMs: this.idleTimeMs
-    });
+    listener(this.getSnapshot(null));
 
     return () => {
       this.#listeners.delete(listener);
@@ -108,49 +82,46 @@ export class PetStateManager {
 
   update() {
     if (this.#paused) return;
-    const nextState = this.#pickNextState();
+
+    const timeContext = this.#timeContextProvider();
+    const reminderContext = this.#reminderContextProvider();
+    const nextState = resolveNextPetState({
+      currentState: this.#currentState,
+      timeContext,
+      idleTimeMs: this.idleTimeMs,
+      nextReminder: reminderContext.nextReminder,
+      lastReminderAt: reminderContext.lastReminderAt,
+      now: new Date()
+    });
+
     this.changeState(nextState);
   }
 
-  #pickNextState() {
-    const baseTransitions =
-      this.#config.transitions[this.#currentState] ?? this.#config.transitions.idle;
-    const transitions = cloneTransitions(baseTransitions);
-    const idleTimeMs = this.idleTimeMs;
+  getSnapshot(previousState = this.#currentState) {
+    const timeContext = this.#timeContextProvider();
+    const reminderContext = this.#reminderContextProvider();
 
-    if (idleTimeMs >= this.#config.sleep.idleThresholdMs) {
-      const sleepTransition = transitions.find((item) => item.state === PET_STATES.SLEEP);
-      if (sleepTransition) {
-        sleepTransition.weight += idleTimeMs >= this.#config.sleep.deepIdleThresholdMs ? 0.55 : 0.3;
-      }
+    return {
+      state: this.#currentState,
+      previousState,
+      idleTimeMs: this.idleTimeMs,
+      timeContext,
+      nextReminder: reminderContext.nextReminder,
+      lastReminderAt: reminderContext.lastReminderAt
+    };
+  }
+
+  #emit(previousState) {
+    const snapshot = this.getSnapshot(previousState);
+    for (const listener of this.#listeners) {
+      listener(snapshot);
     }
-
-    if (
-      this.#currentState === PET_STATES.SLEEP &&
-      idleTimeMs < this.#config.sleep.idleThresholdMs * 0.5
-    ) {
-      return PET_STATES.IDLE;
-    }
-
-    return pickWeightedState(transitions);
   }
 
   #resolveDuration(state) {
     const [min, max] =
       this.#config.tickDurations[state] ?? this.#config.tickDurations[PET_STATES.IDLE];
     return randomBetween(min, max);
-  }
-
-  #emit(previousState) {
-    const payload = {
-      state: this.#currentState,
-      previousState,
-      idleTimeMs: this.idleTimeMs
-    };
-
-    for (const listener of this.#listeners) {
-      listener(payload);
-    }
   }
 
   #scheduleNext(duration) {
