@@ -22,7 +22,9 @@ export const PET_BEHAVIOR_CONFIG = {
   },
   movement: {
     maxStepX: 22,
-    maxStepY: 10
+    maxStepY: 10,
+    idleStepX: 8,
+    idleStepY: 4
   },
   chatter: {
     longAbsenceMs: 28000,

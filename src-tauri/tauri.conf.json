@@ -15,8 +15,8 @@
       {
         "label": "main",
         "title": "tsurubami",
-        "width": 380,
-        "height": 380,
+        "width": 340,
+        "height": 340,
         "backgroundColor": "#00000000",
         "decorations": false,
         "transparent": true,

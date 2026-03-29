@@ -1,198 +1,206 @@
-import { mergeSettings } from '../settings/settings-store.js';
-import { resetWindowPosition, saveWindowPosition } from '../storage/position.js';
+import { invoke } from '@tauri-apps/api/core';
+import { emit } from '@tauri-apps/api/event';
 
 export function createMenuController({
   root,
   toggleButton,
-  panel,
   launcher,
   bubble,
   pet,
   settingsRef,
-  audioStatusRef
+  onSettingsChange
 }) {
-  const toggleInputs = Array.from(panel.querySelectorAll('input[data-setting-key]'));
-  const segmentButtons = Array.from(panel.querySelectorAll('.segment-button'));
-  const actionButtons = Array.from(panel.querySelectorAll('[data-settings-action]'));
-  const microphoneStatus = panel.querySelector('#microphone-status');
-  const microphoneStatusText = panel.querySelector('.microphone-status-text');
+  const isMac = /Mac|iPhone|iPad|iPod/.test(window.navigator.userAgent);
+  const pressEventName = isMac ? 'mousedown' : 'pointerdown';
+  const contextMenu = document.getElementById('pet-context-menu');
+  const contextToggleMode = document.getElementById('pet-context-toggle-mode');
+  const contextOpenSettings = document.getElementById('pet-context-open-settings');
+  const hoverState = {
+    hoveringPet: false,
+    hoveringButton: false,
+    timer: null,
+    lastOpenAt: 0
+  };
+
+  function containsPoint(element, x, y) {
+    if (!element || element.hidden) return false;
+    const rect = element.getBoundingClientRect();
+    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+  }
+
+  async function openSettingsWindow() {
+    try {
+      await invoke('open_settings_window');
+    } catch (error) {
+      console.warn('Failed to open settings window.', error);
+      bubble.show('设置窗口没能打开。', 1800);
+    }
+  }
+
+  function updateToggleVisibility() {
+    toggleButton.hidden = !settingsRef.current.petVisible || (!hoverState.hoveringPet && !hoverState.hoveringButton);
+  }
+
+  function updateContextMenu() {
+    if (!contextToggleMode) return;
+    contextToggleMode.textContent = settingsRef.current.clickThrough ? '恢复为可交互' : '切换为点击穿透';
+  }
+
+  function openGuard() {
+    const now = Date.now();
+    if (now - hoverState.lastOpenAt < 260) return false;
+    hoverState.lastOpenAt = now;
+    return true;
+  }
+
+  function scheduleToggleShow() {
+    window.clearTimeout(hoverState.timer);
+    hoverState.timer = window.setTimeout(() => {
+      hoverState.hoveringPet = true;
+      updateToggleVisibility();
+    }, 520);
+  }
+
+  function hideToggle() {
+    window.clearTimeout(hoverState.timer);
+    hoverState.hoveringPet = false;
+    if (!hoverState.hoveringButton) {
+      updateToggleVisibility();
+    }
+  }
 
   function syncVisibility() {
     root.hidden = !settingsRef.current.petVisible;
     launcher.hidden = settingsRef.current.petVisible;
-    toggleButton.hidden = !settingsRef.current.petVisible;
-    panel.hidden = !settingsRef.current.petVisible || panel.hidden;
+    updateToggleVisibility();
+    updateContextMenu();
   }
 
-  function syncInputs() {
-    toggleInputs.forEach((input) => {
-      input.checked = Boolean(settingsRef.current[input.dataset.settingKey]);
-    });
-
-    segmentButtons.forEach((button) => {
-      const active = settingsRef.current[button.dataset.settingKey] === button.dataset.settingValue;
-      button.dataset.active = active ? 'true' : 'false';
-      button.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
-
-    if (microphoneStatus) {
-      const statusMap = {
-        idle: settingsRef.current.microphoneEnabled ? '待启动' : '未启用',
-        requesting: '请求权限中',
-        listening: '监听中',
-        denied: '未授权',
-        unsupported: '当前环境不支持',
-        error: '启动失败'
-      };
-
-      const levelText =
-        audioStatusRef.current?.status === 'listening'
-          ? ` · 音量 ${Math.round((audioStatusRef.current.level ?? 0) * 100)}%`
-          : '';
-      const resolvedStatus = audioStatusRef.current?.status ?? 'idle';
-      microphoneStatus.dataset.status = resolvedStatus;
-
-      if (microphoneStatusText) {
-        microphoneStatusText.textContent = `${statusMap[resolvedStatus] ?? '未启用'}${levelText}`;
-      }
-    }
-
-    const visibilityButton = panel.querySelector('[data-settings-action="toggle-visibility"]');
-    if (visibilityButton) {
-      visibilityButton.textContent = settingsRef.current.petVisible ? '隐藏桌宠' : '显示桌宠';
-    }
-  }
-
-  function applySettings(nextSettings, feedback) {
-    settingsRef.current = mergeSettings(settingsRef.current, nextSettings);
+  function applyExternalSettings(nextSettings) {
+    settingsRef.current = { ...settingsRef.current, ...nextSettings };
     pet.updateSettings(settingsRef.current);
-    syncInputs();
     syncVisibility();
-
-    if (feedback) {
-      bubble.show(feedback, 2200);
-    }
   }
 
-  function openPanel() {
-    if (!settingsRef.current.petVisible) return;
-    syncInputs();
-    panel.hidden = false;
-  }
-
-  function closePanel() {
-    panel.hidden = true;
-  }
-
-  toggleButton.addEventListener('click', () => {
-    if (panel.hidden) {
-      openPanel();
+  async function commitSettings(nextPatch) {
+    if (onSettingsChange) {
+      await onSettingsChange(nextPatch);
       return;
     }
 
-    closePanel();
+    settingsRef.current = { ...settingsRef.current, ...nextPatch };
+    applyExternalSettings(settingsRef.current);
+    await emit('tsurubami://settings-updated', settingsRef.current);
+  }
+
+  function hideContextMenu() {
+    if (!contextMenu) return;
+    contextMenu.hidden = true;
+  }
+
+  function showContextMenu(clientX, clientY) {
+    if (!contextMenu) return;
+    updateContextMenu();
+    const menuWidth = 166;
+    const menuHeight = 88;
+    const maxX = Math.max(8, window.innerWidth - menuWidth - 8);
+    const maxY = Math.max(8, window.innerHeight - menuHeight - 8);
+    contextMenu.style.left = `${Math.min(clientX, maxX)}px`;
+    contextMenu.style.top = `${Math.min(clientY, maxY)}px`;
+    contextMenu.hidden = false;
+  }
+
+  root.addEventListener('pointerenter', () => {
+    scheduleToggleShow();
   });
+
+  root.addEventListener('pointerleave', () => {
+    hideToggle();
+  });
+
+  toggleButton.addEventListener('pointerenter', () => {
+    window.clearTimeout(hoverState.timer);
+    hoverState.hoveringButton = true;
+    hoverState.hoveringPet = true;
+    updateToggleVisibility();
+  });
+
+  toggleButton.addEventListener('pointerleave', () => {
+    hoverState.hoveringButton = false;
+    hideToggle();
+  });
+
+  async function handleDocumentOpen(event) {
+    const { clientX, clientY } = event;
+
+    if (containsPoint(toggleButton, clientX, clientY)) {
+      if (!openGuard()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      hideContextMenu();
+      await openSettingsWindow();
+      return;
+    }
+
+    if (containsPoint(launcher, clientX, clientY)) {
+      if (!openGuard()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      applyExternalSettings({ petVisible: true });
+      bubble.show('我回来啦。', 1800);
+      hideContextMenu();
+      await openSettingsWindow();
+      return;
+    }
+
+    if (!containsPoint(contextMenu, clientX, clientY)) {
+      hideContextMenu();
+    }
+  }
+
+  document.addEventListener(
+    pressEventName,
+    (event) => {
+      void handleDocumentOpen(event);
+    },
+    true
+  );
+
+  if (isMac) {
+    document.addEventListener(
+      'click',
+      (event) => {
+        void handleDocumentOpen(event);
+      },
+      true
+    );
+  }
 
   root.addEventListener('contextmenu', (event) => {
     event.preventDefault();
-    toggleButton.click();
+    showContextMenu(event.clientX, event.clientY);
   });
 
-  launcher.addEventListener('click', () => {
-    applySettings({ petVisible: true }, '我回来啦。');
-    openPanel();
+  contextToggleMode?.addEventListener('pointerdown', async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    hideContextMenu();
+    await commitSettings({ clickThrough: !settingsRef.current.clickThrough });
   });
 
-  window.addEventListener('click', (event) => {
-    if (panel.hidden) return;
-    if (panel.contains(event.target) || root.contains(event.target)) return;
-    closePanel();
+  contextOpenSettings?.addEventListener('pointerdown', async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    hideContextMenu();
+    await openSettingsWindow();
   });
 
-  toggleInputs.forEach((input) => {
-    input.addEventListener('change', () => {
-      const key = input.dataset.settingKey;
-      const value = input.checked;
-      const feedbackByKey = {
-        autoTalk: value ? '那我继续陪你碎碎念。' : '好，我安静一点陪着你。',
-        nightMode: value ? '深夜我会更轻一点。' : '好，夜里我也照常活动。',
-        remindersEnabled: value ? '提醒重新打开啦。' : '提醒先帮你关掉了。',
-        microphoneEnabled: value ? '那我开始留意周围的声音。' : '好，我先把耳朵收起来。'
-      };
-
-      applySettings({ [key]: value }, feedbackByKey[key] ?? '设置已更新。');
-    });
-  });
-
-  segmentButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const value = button.dataset.settingValue;
-      const textMap = {
-        low: '那我今天收敛一点点。',
-        medium: '保持刚刚好的陪伴节奏。',
-        high: '好，我今天会活跃一点。'
-      };
-
-      const microphoneTextMap = {
-        low: '那我就迟钝一点，别被小动静吓到。',
-        medium: '这样听觉就刚刚好。',
-        high: '好，我会对声音更敏感一点。'
-      };
-
-      applySettings(
-        { [button.dataset.settingKey]: value },
-        button.dataset.settingKey === 'microphoneSensitivity' ? microphoneTextMap[value] : textMap[value]
-      );
-    });
-  });
-
-  actionButtons.forEach((button) => {
-    button.addEventListener('click', async () => {
-      const action = button.dataset.settingsAction;
-
-      if (action === 'test-reminder') {
-        pet.triggerTestReminder();
-        closePanel();
-        return;
-      }
-
-      if (action === 'reset-position') {
-        await resetWindowPosition();
-        await saveWindowPosition();
-        bubble.show('位置已经重置啦。', 2200);
-        closePanel();
-        return;
-      }
-
-      if (action === 'request-microphone') {
-        const granted = await pet.requestMicrophonePermission();
-        if (granted) {
-          settingsRef.current = mergeSettings(settingsRef.current, { microphoneEnabled: true });
-        }
-        bubble.show(granted ? '我听见啦，现在会留意周围声音。' : '我还没拿到麦克风权限。', 2400);
-        syncInputs();
-        return;
-      }
-
-      if (action === 'toggle-visibility') {
-        const nextVisible = !settingsRef.current.petVisible;
-        applySettings(
-          { petVisible: nextVisible },
-          nextVisible ? '我又探头出来了。' : '那我先躲一下，有事再叫我。'
-        );
-        closePanel();
-        return;
-      }
-
-      if (action === 'close') {
-        closePanel();
-        return;
-      }
-    });
-  });
-
-  syncInputs();
   syncVisibility();
 
-  return { openPanel, closePanel, refresh: syncInputs };
+  return {
+    refresh() {
+      syncVisibility();
+    },
+    applyExternalSettings
+  };
 }

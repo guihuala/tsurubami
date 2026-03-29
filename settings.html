@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tsurubami settings</title>
+    <link rel="stylesheet" href="/src/styles/settings-window.css" />
+  </head>
+  <body>
+    <main class="settings-window">
+      <section class="settings-card" aria-label="桌宠设置">
+        <div class="settings-header">
+          <div>
+            <h1>设置</h1>
+          </div>
+        </div>
+
+        <div class="settings-list">
+          <button class="setting-row toggle-row" type="button" data-toggle-key="autoTalk">
+            <span>自动说话</span>
+            <span id="setting-auto-talk" class="toggle-pill" aria-hidden="true">
+              <span class="toggle-thumb"></span>
+            </span>
+          </button>
+
+          <div class="setting-block">
+            <span class="setting-label">活跃度</span>
+            <div class="segmented-control">
+              <button type="button" class="segment-button" data-setting-key="activityLevel" data-setting-value="low">低</button>
+              <button type="button" class="segment-button" data-setting-key="activityLevel" data-setting-value="medium">中</button>
+              <button type="button" class="segment-button" data-setting-key="activityLevel" data-setting-value="high">高</button>
+            </div>
+          </div>
+
+          <button class="setting-row toggle-row" type="button" data-toggle-key="nightMode">
+            <span>深夜安静模式</span>
+            <span id="setting-night-mode" class="toggle-pill" aria-hidden="true">
+              <span class="toggle-thumb"></span>
+            </span>
+          </button>
+
+          <button class="setting-row toggle-row" type="button" data-toggle-key="remindersEnabled">
+            <span>提醒功能</span>
+            <span id="setting-reminders-enabled" class="toggle-pill" aria-hidden="true">
+              <span class="toggle-thumb"></span>
+            </span>
+          </button>
+
+          <button class="setting-row toggle-row" type="button" data-toggle-key="clickThrough">
+            <span>点击穿透</span>
+            <span id="setting-click-through" class="toggle-pill" aria-hidden="true">
+              <span class="toggle-thumb"></span>
+            </span>
+          </button>
+
+          <div class="setting-block setting-block-compact">
+            <button class="setting-row toggle-row" type="button" data-toggle-key="weirdInteractions">
+              <span>微妙互动（实验性）</span>
+              <span id="setting-weird-interactions" class="toggle-pill" aria-hidden="true">
+                <span class="toggle-thumb"></span>
+              </span>
+            </button>
+            <div class="status-note">增加少量不可预测反应，不影响使用</div>
+          </div>
+
+          <div class="setting-block">
+            <span class="setting-label">当前交互状态</span>
+            <div id="interaction-status" class="status-pill" data-mode="interactive">可交互</div>
+            <div class="status-note">保底恢复快捷键：CmdOrCtrl + Shift + R</div>
+            <button id="restore-interaction" type="button" class="ghost-button restore-button" hidden>
+              恢复交互
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-actions">
+          <button type="button" class="action-button" data-action="test-reminder">测试提醒</button>
+          <button type="button" class="action-button" data-action="reset-position">重置位置</button>
+          <button type="button" class="action-button" data-action="toggle-visibility">隐藏桌宠</button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/settings-window.js"></script>
+  </body>
+</html>

@@ -17,7 +17,7 @@ export function createLineSelector() {
 
   function getLine(category, context = {}) {
     const resolvedCategory = getCategory(category, context);
-    const pool = DIALOGUE_LINES[resolvedCategory] ?? [];
+    const pool = resolvePool(resolvedCategory, context);
 
     if (resolvedCategory === 'idleMurmur' && context.timePeriod === 'lateNight') {
       const lateNightPool = [
@@ -36,6 +36,23 @@ export function createLineSelector() {
     }
 
     return pickUniqueLine(resolvedCategory, pool);
+  }
+
+  function resolvePool(category, context) {
+    if (category === 'idleMurmur') {
+      if (context.emotion === 'annoyed') return DIALOGUE_LINES.emotionAnnoyed ?? DIALOGUE_LINES.idleMurmur ?? [];
+      if (context.emotion === 'bored') return DIALOGUE_LINES.emotionBored ?? DIALOGUE_LINES.idleMurmur ?? [];
+      if (context.emotion === 'watching') return DIALOGUE_LINES.emotionWatching ?? DIALOGUE_LINES.idleMurmur ?? [];
+    }
+
+    if (category === 'clickedIdle' && context.emotion === 'annoyed') {
+      return [
+        ...(DIALOGUE_LINES.behaviorRapidClick ?? []),
+        ...(DIALOGUE_LINES.clickedIdle ?? [])
+      ];
+    }
+
+    return DIALOGUE_LINES[category] ?? [];
   }
 
   function pickUniqueLine(category, pool) {

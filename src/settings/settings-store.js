@@ -6,8 +6,8 @@ const DEFAULT_SETTINGS = {
   nightMode: true,
   remindersEnabled: true,
   petVisible: true,
-  microphoneEnabled: false,
-  microphoneSensitivity: 'medium'
+  clickThrough: false,
+  weirdInteractions: true
 };
 
 export function loadSettings() {
