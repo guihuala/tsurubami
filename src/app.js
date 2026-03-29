@@ -17,5 +17,5 @@ export async function bootApp() {
   createMenuController({ root, menu, bubble });
 
   await restoreWindowPosition();
-  pet.speakRandomLine();
+  pet.startBehaviorLoop();
 }

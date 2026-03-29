@@ -11,3 +11,7 @@ export async function restoreWindowPosition() {
 export async function resetWindowPosition() {
   await invoke('reset_window_position');
 }
+
+export async function nudgeWindowPosition(dx, dy) {
+  await invoke('nudge_window', { dx, dy });
+}

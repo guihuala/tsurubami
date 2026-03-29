@@ -10,13 +10,13 @@ struct StoredWindowPosition {
     y: i32,
 }
 
-fn position_store_path(app: &AppHandle) -> Option<PathBuf> {
+fn position_store_path<R: Runtime>(app: &AppHandle<R>) -> Option<PathBuf> {
     let mut base = app.path().app_config_dir().ok()?;
     base.push("window-position.json");
     Some(base)
 }
 
-fn save_position(app: &AppHandle, x: i32, y: i32) {
+fn save_position<R: Runtime>(app: &AppHandle<R>, x: i32, y: i32) {
     let Some(path) = position_store_path(app) else {
         return;
     };
@@ -32,7 +32,7 @@ fn save_position(app: &AppHandle, x: i32, y: i32) {
 }
 
 fn restore_position<R: Runtime>(window: &WebviewWindow<R>) {
-    let Some(path) = position_store_path(&window.app_handle()) else {
+    let Some(path) = position_store_path(window.app_handle()) else {
         return;
     };
 
@@ -60,6 +60,27 @@ fn reset_window_position_impl<R: Runtime>(window: &WebviewWindow<R>) -> tauri::R
     Ok(())
 }
 
+fn clamp_window_to_monitor<R: Runtime>(
+    window: &WebviewWindow<R>,
+    target_x: i32,
+    target_y: i32,
+) -> tauri::Result<(i32, i32)> {
+    if let Some(monitor) = window.current_monitor()? {
+        let monitor_pos = monitor.position();
+        let monitor_size = monitor.size();
+        let window_size = window.outer_size()?;
+
+        let min_x = monitor_pos.x;
+        let min_y = monitor_pos.y;
+        let max_x = monitor_pos.x + monitor_size.width as i32 - window_size.width as i32;
+        let max_y = monitor_pos.y + monitor_size.height as i32 - window_size.height as i32;
+
+        return Ok((target_x.clamp(min_x, max_x), target_y.clamp(min_y, max_y)));
+    }
+
+    Ok((target_x, target_y))
+}
+
 #[tauri::command]
 fn save_current_window_position(app: AppHandle, window: WebviewWindow) {
     if let Ok(position) = window.outer_position() {
@@ -82,6 +103,15 @@ fn reset_window_position(window: WebviewWindow, app: AppHandle) {
 }
 
 #[tauri::command]
+fn nudge_window(window: WebviewWindow, app: AppHandle, dx: i32, dy: i32) -> tauri::Result<()> {
+    let position = window.outer_position()?;
+    let (x, y) = clamp_window_to_monitor(&window, position.x + dx, position.y + dy)?;
+    window.set_position(PhysicalPosition::new(x, y))?;
+    save_position(&app, x, y);
+    Ok(())
+}
+
+#[tauri::command]
 fn quit_app(app: AppHandle) {
     app.exit(0);
 }
@@ -98,6 +128,7 @@ fn main() {
             save_current_window_position,
             restore_window_position,
             reset_window_position,
+            nudge_window,
             quit_app
         ])
         .run(tauri::generate_context!())
