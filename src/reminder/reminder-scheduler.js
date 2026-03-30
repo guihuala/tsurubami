@@ -1,6 +1,5 @@
 export function createReminderScheduler({ store, onReminderDue, pollMs = 1000 }) {
   let timer = null;
-  let lastTriggeredReminderId = null;
 
   function start() {
     if (timer) return;
@@ -17,10 +16,8 @@ export function createReminderScheduler({ store, onReminderDue, pollMs = 1000 })
   function check() {
     const dueReminders = store.getDue(new Date());
     dueReminders.forEach((reminder) => {
-      if (reminder.id === lastTriggeredReminderId) return;
       const handled = onReminderDue(reminder);
       if (handled === false) return;
-      lastTriggeredReminderId = reminder.id;
       store.markTriggered(reminder.id, new Date());
     });
   }

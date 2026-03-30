@@ -51,6 +51,10 @@ export function createAudioAnalyzer(sensitivity = 'medium') {
 
   function analyze(dataArray) {
     const level = getLevelFromTimeDomain(dataArray);
+    return classifyLevel(level);
+  }
+
+  function classifyLevel(level) {
     const thresholds = getThresholds();
 
     return {
@@ -63,6 +67,7 @@ export function createAudioAnalyzer(sensitivity = 'medium') {
 
   return {
     analyze,
+    classifyLevel,
     setSensitivity
   };
 }

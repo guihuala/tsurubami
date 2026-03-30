@@ -5,6 +5,8 @@ const DEFAULT_SETTINGS = {
   activityLevel: 'medium',
   nightMode: true,
   remindersEnabled: true,
+  microphoneEnabled: false,
+  microphoneSensitivity: 'medium',
   petVisible: true,
   clickThrough: false,
   weirdInteractions: true

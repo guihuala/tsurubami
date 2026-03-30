@@ -211,7 +211,7 @@ fn open_settings_window_impl<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()
         WebviewUrl::App("settings.html".into()),
     )
     .title("tsurubami settings")
-    .inner_size(336.0, 700.0)
+    .inner_size(420.0, 760.0)
     .resizable(false)
     .decorations(true)
     .always_on_top(true)

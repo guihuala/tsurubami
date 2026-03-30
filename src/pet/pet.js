@@ -1,4 +1,7 @@
+import { emit } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { createMicrophoneMonitor } from '../audio/microphone-monitor.js';
+import { MICROPHONE_STATUS } from '../audio/audio-types.js';
 import { createBehaviorAnalyzer } from '../behavior/behavior-analyzer.js';
 import { createBehaviorTracker } from '../behavior/behavior-tracker.js';
 import { createLineSelector } from '../dialogue/line-selector.js';
@@ -10,6 +13,7 @@ import { saveWindowPosition } from '../storage/position.js';
 import { createTimeContext, watchTimeContext } from '../time/time-context.js';
 import { createWeirdEventManager } from '../weird/weird-event-manager.js';
 import { createWeirdScheduler } from '../weird/weird-scheduler.js';
+import { createPetAudioReactionHandler } from './pet-audio-reaction.js';
 import { PET_BEHAVIOR_CONFIG, PET_STATES } from './pet-config.js';
 import { createPetInteractionManager } from './pet-interaction.js';
 import { PetStateManager } from './pet-state.js';
@@ -46,6 +50,7 @@ export function createPetController({
   const lineSelector = createLineSelector();
   const emotionState = createEmotionState();
   const interactionManager = createPetInteractionManager();
+  const audioReactionHandler = createPetAudioReactionHandler();
   const weirdScheduler = createWeirdScheduler();
   const reminderStore = createReminderStore();
   let settings = { ...initialSettings };
@@ -58,6 +63,14 @@ export function createPetController({
   let activePress = null;
   let lastActivationAt = 0;
   let hoverPredictionCooldownUntil = 0;
+  let lastSoundCategory = null;
+  let microphoneStatus = MICROPHONE_STATUS.IDLE;
+
+  const microphoneMonitor = createMicrophoneMonitor({
+    sensitivity: settings.microphoneSensitivity,
+    onStatusChange: handleMicrophoneStatusChange,
+    onLevel: handleMicrophoneLevel
+  });
 
   const reminderScheduler = createReminderScheduler({
     store: reminderStore,
@@ -91,6 +104,17 @@ export function createPetController({
   function updateTimeAppearance() {
     root.dataset.period = currentTimeContext.period;
     root.dataset.emotion = emotionState.emotion;
+  }
+
+  function publishMicrophoneStatus() {
+    void emit('tsurubami://microphone-status-updated', {
+      status: microphoneStatus
+    });
+  }
+
+  function handleMicrophoneStatusChange(payload) {
+    microphoneStatus = payload?.status ?? MICROPHONE_STATUS.IDLE;
+    publishMicrophoneStatus();
   }
 
   function isQuietTime() {
@@ -131,6 +155,10 @@ export function createPetController({
     root.style.setProperty('--pet-drift-x', '0px');
     root.style.setProperty('--pet-drift-y', '0px');
     root.style.setProperty('--pet-tilt', '0deg');
+  }
+
+  function clearSoundReaction() {
+    delete root.dataset.soundReaction;
   }
 
   function emitSparkles(kind = 'normal') {
@@ -263,6 +291,74 @@ export function createPetController({
     }
 
     speakCategory('idleMurmur', { duration: 2200 });
+  }
+
+  async function syncMicrophoneState({ requestPermission = false } = {}) {
+    microphoneMonitor.setSensitivity(settings.microphoneSensitivity);
+
+    if ((settings.microphoneEnabled !== true && !requestPermission) || settings.petVisible === false) {
+      microphoneMonitor.stop();
+      microphoneStatus = MICROPHONE_STATUS.IDLE;
+      clearSoundReaction();
+      publishMicrophoneStatus();
+      return false;
+    }
+
+    const status = microphoneMonitor.getStatus();
+    if (status === MICROPHONE_STATUS.LISTENING) {
+      publishMicrophoneStatus();
+      return true;
+    }
+
+    if (!requestPermission && status === MICROPHONE_STATUS.DENIED) {
+      publishMicrophoneStatus();
+      return false;
+    }
+
+    const started = await microphoneMonitor.start();
+    microphoneStatus = microphoneMonitor.getStatus();
+    publishMicrophoneStatus();
+    return started;
+  }
+
+  function handleMicrophoneLevel(analysis) {
+    if (settings.microphoneEnabled !== true || settings.petVisible === false) return;
+    if (!analysis?.category) {
+      lastSoundCategory = null;
+      return;
+    }
+
+    if (analysis.category === lastSoundCategory && analysis.category !== 'loud') return;
+    lastSoundCategory = analysis.category;
+
+    const reaction = audioReactionHandler.handleSoundEvent({
+      event: analysis.category,
+      currentState: stateManager.currentState,
+      isQuietTime: isQuietTime(),
+      reminderCoolingDown: reminderCoolingDown(),
+      level: analysis.level
+    });
+
+    if (!reaction || !canActVisibly()) return;
+
+    root.dataset.soundReaction =
+      reaction.bubbleKind === 'sound'
+        ? 'voice'
+        : reaction.bubbleKind === 'startled'
+          ? 'loud'
+          : 'soft';
+
+    queueReaction({
+      state: reaction.nextState,
+      category: reaction.category,
+      duration: reaction.duration,
+      kind: reaction.bubbleKind
+    });
+    stateManager.markInteraction();
+    stateManager.changeState(reaction.nextState, { duration: reaction.duration });
+    window.setTimeout(() => {
+      clearSoundReaction();
+    }, reaction.duration + 240);
   }
 
   function handleStateChange(snapshot) {
@@ -608,6 +704,7 @@ export function createPetController({
 
   function startBehaviorLoop() {
     updateTimeAppearance();
+    publishMicrophoneStatus();
     reminderScheduler.start();
     stateManager.start();
     if (settings.autoTalk && canActVisibly()) {
@@ -620,11 +717,13 @@ export function createPetController({
       });
       stateManager.changeState(PET_STATES.TALK);
     }
+    void syncMicrophoneState();
   }
 
   function stopBehaviorLoop() {
     unsubscribe();
     unwatchTimeContext();
+    microphoneMonitor.stop();
     reminderScheduler.stop();
     stateManager.stop();
     weirdEventManager.clear();
@@ -639,6 +738,8 @@ export function createPetController({
       if (!settings.petVisible) {
         pendingReaction = null;
       }
+
+      void syncMicrophoneState();
     },
     speakManualGreeting() {
       stateManager.markInteraction();
@@ -659,6 +760,12 @@ export function createPetController({
         },
         { force: true }
       );
+    },
+    replaceReminders(nextReminders) {
+      reminderStore.replaceAll(nextReminders);
+    },
+    requestMicrophonePermission() {
+      return syncMicrophoneState({ requestPermission: true });
     },
     getCurrentState: () => stateManager.currentState,
     getReminderList: () => reminderStore.list(),

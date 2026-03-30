@@ -4,6 +4,7 @@ export const MICROPHONE_STATUS = {
   LISTENING: 'listening',
   DENIED: 'denied',
   UNSUPPORTED: 'unsupported',
+  TIMEOUT: 'timeout',
   ERROR: 'error'
 };
 

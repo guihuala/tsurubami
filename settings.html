@@ -23,9 +23,9 @@
             </span>
           </button>
 
-          <div class="setting-block">
-            <span class="setting-label">活跃度</span>
-            <div class="segmented-control">
+          <div class="setting-block setting-block-inline">
+            <span class="setting-label setting-label-inline">活跃度</span>
+            <div class="segmented-control segmented-control-triple">
               <button type="button" class="segment-button" data-setting-key="activityLevel" data-setting-value="low">低</button>
               <button type="button" class="segment-button" data-setting-key="activityLevel" data-setting-value="medium">中</button>
               <button type="button" class="segment-button" data-setting-key="activityLevel" data-setting-value="high">高</button>
@@ -46,6 +46,29 @@
             </span>
           </button>
 
+          <section class="setting-block microphone-block" aria-label="麦克风互动">
+            <button class="setting-row toggle-row" type="button" data-toggle-key="microphoneEnabled">
+              <span>麦克风互动</span>
+              <span id="setting-microphone-enabled" class="toggle-pill" aria-hidden="true">
+                <span class="toggle-thumb"></span>
+              </span>
+            </button>
+
+            <div class="setting-block-inner setting-block-inline">
+              <span class="setting-label setting-label-inline">灵敏度</span>
+              <div class="segmented-control segmented-control-triple">
+                <button type="button" class="segment-button" data-setting-key="microphoneSensitivity" data-setting-value="low">低</button>
+                <button type="button" class="segment-button" data-setting-key="microphoneSensitivity" data-setting-value="medium">中</button>
+                <button type="button" class="segment-button" data-setting-key="microphoneSensitivity" data-setting-value="high">高</button>
+              </div>
+            </div>
+
+            <div class="setting-block-inner setting-block-inline setting-block-inline-wide">
+              <span class="setting-label setting-label-inline">麦克风状态</span>
+              <div id="microphone-status" class="status-pill status-pill-compact" data-mode="idle">未开启</div>
+            </div>
+          </section>
+
           <button class="setting-row toggle-row" type="button" data-toggle-key="clickThrough">
             <span>点击穿透</span>
             <span id="setting-click-through" class="toggle-pill" aria-hidden="true">
@@ -63,20 +86,82 @@
             <div class="status-note">增加少量不可预测反应，不影响使用</div>
           </div>
 
-          <div class="setting-block">
-            <span class="setting-label">当前交互状态</span>
-            <div id="interaction-status" class="status-pill" data-mode="interactive">可交互</div>
+          <div class="setting-block status-card">
+            <div class="setting-block-inline setting-block-inline-wide">
+              <span class="setting-label setting-label-inline">交互状态</span>
+              <div id="interaction-status" class="status-pill status-pill-compact" data-mode="interactive">可交互</div>
+            </div>
             <div class="status-note">保底恢复快捷键：CmdOrCtrl + Shift + R</div>
             <button id="restore-interaction" type="button" class="ghost-button restore-button" hidden>
               恢复交互
             </button>
           </div>
-        </div>
 
-        <div class="settings-actions">
-          <button type="button" class="action-button" data-action="test-reminder">测试提醒</button>
-          <button type="button" class="action-button" data-action="reset-position">重置位置</button>
-          <button type="button" class="action-button" data-action="toggle-visibility">隐藏桌宠</button>
+          <section class="setting-block reminder-block" aria-label="提醒管理">
+            <div class="reminder-header">
+              <div class="setting-label">提醒管理</div>
+              <div class="status-note reminder-caption">一次性 / 每日提醒，改完立即生效。</div>
+            </div>
+
+            <div class="reminder-editor">
+              <form id="reminder-form" class="reminder-form">
+                <input id="reminder-edit-id" type="hidden" />
+                <label class="reminder-field">
+                  <span class="setting-label">提醒内容</span>
+                  <input id="reminder-text" class="text-input" type="text" maxlength="60" placeholder="例如：记得喝水和活动肩膀" required />
+                </label>
+
+                <div class="reminder-grid">
+                  <label class="reminder-field">
+                    <span class="setting-label">提醒类型</span>
+                    <select id="reminder-schedule-type" class="select-input">
+                      <option value="once">一次性</option>
+                      <option value="daily">每天</option>
+                    </select>
+                  </label>
+
+                  <label id="reminder-once-field" class="reminder-field">
+                    <span class="setting-label">时间</span>
+                    <input id="reminder-trigger-at" class="text-input" type="datetime-local" required />
+                  </label>
+
+                  <label id="reminder-daily-field" class="reminder-field" hidden>
+                    <span class="setting-label">每日时间</span>
+                    <input id="reminder-time-of-day" class="text-input" type="time" />
+                  </label>
+                </div>
+
+                <div class="reminder-form-actions">
+                  <button id="reminder-submit" type="submit" class="action-button">新增提醒</button>
+                  <button id="reminder-cancel" type="button" class="ghost-button" hidden>取消编辑</button>
+                </div>
+              </form>
+
+              <div id="reminder-form-note" class="status-note" hidden></div>
+            </div>
+
+            <div class="reminder-list-panel">
+              <div class="reminder-toolbar">
+                <div id="reminder-summary" class="status-note reminder-summary">还没有提醒，可以先加一个。</div>
+                <div class="reminder-toolbar-controls">
+                  <label class="reminder-filter">
+                    <span class="setting-label">查看</span>
+                    <select id="reminder-filter" class="select-input">
+                      <option value="all">全部</option>
+                      <option value="enabled">已启用</option>
+                      <option value="daily">每日</option>
+                      <option value="once">一次性</option>
+                      <option value="completed">已完成</option>
+                    </select>
+                  </label>
+                  <button id="restore-demo-reminders" type="button" class="ghost-button ghost-button-subtle">恢复演示提醒</button>
+                </div>
+              </div>
+
+              <div id="reminder-empty" class="status-note">还没有提醒，可以先加一个。</div>
+              <div id="reminder-list" class="reminder-list" aria-live="polite"></div>
+            </div>
+          </section>
         </div>
       </section>
     </main>

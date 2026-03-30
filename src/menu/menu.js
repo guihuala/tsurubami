@@ -15,10 +15,7 @@ export function createMenuController({
   const contextMenu = document.getElementById('pet-context-menu');
   const contextToggleMode = document.getElementById('pet-context-toggle-mode');
   const contextOpenSettings = document.getElementById('pet-context-open-settings');
-  const hoverState = {
-    hoveringPet: false,
-    hoveringButton: false,
-    timer: null,
+  const openState = {
     lastOpenAt: 0
   };
 
@@ -38,7 +35,7 @@ export function createMenuController({
   }
 
   function updateToggleVisibility() {
-    toggleButton.hidden = !settingsRef.current.petVisible || (!hoverState.hoveringPet && !hoverState.hoveringButton);
+    toggleButton.hidden = !settingsRef.current.petVisible;
   }
 
   function updateContextMenu() {
@@ -48,25 +45,9 @@ export function createMenuController({
 
   function openGuard() {
     const now = Date.now();
-    if (now - hoverState.lastOpenAt < 260) return false;
-    hoverState.lastOpenAt = now;
+    if (now - openState.lastOpenAt < 260) return false;
+    openState.lastOpenAt = now;
     return true;
-  }
-
-  function scheduleToggleShow() {
-    window.clearTimeout(hoverState.timer);
-    hoverState.timer = window.setTimeout(() => {
-      hoverState.hoveringPet = true;
-      updateToggleVisibility();
-    }, 520);
-  }
-
-  function hideToggle() {
-    window.clearTimeout(hoverState.timer);
-    hoverState.hoveringPet = false;
-    if (!hoverState.hoveringButton) {
-      updateToggleVisibility();
-    }
   }
 
   function syncVisibility() {
@@ -109,26 +90,6 @@ export function createMenuController({
     contextMenu.style.top = `${Math.min(clientY, maxY)}px`;
     contextMenu.hidden = false;
   }
-
-  root.addEventListener('pointerenter', () => {
-    scheduleToggleShow();
-  });
-
-  root.addEventListener('pointerleave', () => {
-    hideToggle();
-  });
-
-  toggleButton.addEventListener('pointerenter', () => {
-    window.clearTimeout(hoverState.timer);
-    hoverState.hoveringButton = true;
-    hoverState.hoveringPet = true;
-    updateToggleVisibility();
-  });
-
-  toggleButton.addEventListener('pointerleave', () => {
-    hoverState.hoveringButton = false;
-    hideToggle();
-  });
 
   async function handleDocumentOpen(event) {
     const { clientX, clientY } = event;

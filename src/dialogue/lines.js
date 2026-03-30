@@ -147,6 +147,26 @@ export const DIALOGUE_LINES = {
     '你是故意的吗？',
     '这样也没意思。'
   ],
+  heardSomething: [
+    '我听到了。',
+    '嗯？你刚才说了什么？',
+    '这句我有听见。'
+  ],
+  busyAmbientReaction: [
+    '先继续，我有在听。',
+    '嗯，我听见了。',
+    '你先做完手上的事。'
+  ],
+  sleepyHeardNoise: [
+    '……有声音。',
+    '嗯？我还在听。',
+    '你把我叫醒了吗？'
+  ],
+  startled: [
+    '等等，刚才那是什么？',
+    '声音有点大。',
+    '……吓我一跳。'
+  ],
   weirdPrediction: [
     '你会这么做吧。'
   ],

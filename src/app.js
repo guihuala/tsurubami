@@ -64,6 +64,16 @@ export async function bootApp() {
 
     if (event.payload.type === 'test-reminder') {
       pet.triggerTestReminder();
+      return;
+    }
+
+    if (event.payload.type === 'replace-reminders' && Array.isArray(event.payload.reminders)) {
+      pet.replaceReminders(event.payload.reminders);
+      return;
+    }
+
+    if (event.payload.type === 'request-microphone') {
+      void pet.requestMicrophonePermission();
     }
   });
 
