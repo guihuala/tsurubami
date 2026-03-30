@@ -1,186 +1,37 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tsurubami desktop pet</title>
+    <link rel="stylesheet" href="/src/styles/main.css" />
+  </head>
+  <body>
+    <main id="app" aria-label="tsurubami desktop pet">
+      <div id="bubble" class="bubble" role="status" aria-live="polite"></div>
 
-<head>
-    <title>可爱的盒餐</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="//images.shoutwiki.com/lenen/6/64/Favicon.ico">
-    <link rel="stylesheet" href="//at.alicdn.com/t/c/font_4437936_ccud3dhdrqo.css">
-    <link rel="stylesheet" href="./style.css">
-</head>
+      <button id="settings-toggle" class="settings-toggle" type="button" aria-label="打开设置">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.35 7.35 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.22-1.12.53-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.82 14.52a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.4 1.05.72 1.63.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54c.58-.22 1.12-.53 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z" />
+        </svg>
+      </button>
 
-<body>
+      <button id="pet-launcher" class="pet-launcher" type="button" hidden>叫我出来</button>
 
-    <div id="tips">
-        <h1>点击鹤喰</h1>
-        <h1>⬇️</h1>
-    </div>
+      <div id="pet-context-menu" class="pet-context-menu" hidden>
+        <button id="pet-context-toggle-mode" class="pet-context-item" type="button">切换为点击穿透</button>
+        <button id="pet-context-open-settings" class="pet-context-item" type="button">打开设置</button>
+      </div>
 
-    <div id="toolbar">
+      <section id="pet-root" class="pet" data-drag-handle>
+        <div id="effects" class="effects" aria-hidden="true"></div>
+        <div id="pet-hit-area" class="pet-hit-area" aria-hidden="true"></div>
 
-        <div id="dialogue-buble">
-            <div id="dialogContent"></div>
-        </div>
+        <img id="pet-float" class="pet-float" src="/src/assets/hecan-float.png" alt="" />
+        <img id="pet-image" class="pet-image" src="/src/assets/hecan.png" alt="鹤喰" />
+      </section>
+    </main>
 
-        <div id="float"><img src="hecan-float.png" alt=""></div>
-        <img src="hecan.png" alt="Image">
-        <div id="buttonbar">
-            <div id="button" onclick="emitElement()" style="background-color: rgb(74, 74, 74);">
-                <span class="iconfont icon-xihuan"></span>
-            </div>
-            <div id="button" onclick="showBuble()" onmouseout="startTimer()"
-                style="background-color: rgb(113, 92, 92);">
-                <span class="iconfont icon-xiaoxi1"></span>
-            </div>
-            <div id="button" onclick="showDialog()" style="background-color: rgb(154, 100, 100);">
-                <span class="iconfont icon-shuoming"></span>
-            </div>
-        </div>
-        <div id="container"></div>
-        <div class="background"></div>
-
-    </div>
-
-    <div id="dialog" style="position: absolute;
-        display:  none; border: 2px solid rgb(74, 74, 74);
-        background-color: rgb(74, 74, 74);
-        padding: 10px;border-radius: 10px;box-shadow: #c3cddf 0px 5px 10px;">
-        <div id="dialogHeader" style="cursor: move; color: #ffffff;padding: 10px;">
-            <span class="iconfont icon-quxiao1" onclick="hideDialog()"></span> 公告
-        </div>
-        <div style="background-color: #ffffff;padding: 10px;color: rgb(74, 74, 74);border-radius: 5px;">
-            盒餐小摆件 v1.0<br>
-            使用说明:推荐使用电脑浏览本页面<br>
-            原作:连缘project<br>
-            made by <a style="text-decoration: none;" href="https://ghlg.fun/">ghlg</a>
-        </div>
-    </div>
-
-    <script>
-        var dialog = document.getElementById('dialog');
-        var dialogHeader = document.getElementById('dialogHeader');
-
-        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-
-        dialogHeader.onmousedown = dragMouseDown;
-
-        function showDialog() {
-            dialog.style.display = 'block';
-        }
-
-        function dragMouseDown(e) {
-            e = e || window.event;
-            e.preventDefault();
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            document.onmouseup = closeDragElement;
-            document.onmousemove = elementDrag;
-        }
-
-        function elementDrag(e) {
-            e = e || window.event;
-            e.preventDefault();
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-
-            var newTop = dialog.offsetTop - pos2;
-            var newLeft = dialog.offsetLeft - pos1;
-
-            var winWidth = window.innerWidth;
-            var winHeight = window.innerHeight;
-
-            if (newTop >= 0 && newTop <= winHeight - dialog.offsetHeight) {
-                dialog.style.top = newTop + "px";
-            }
-            if (newLeft >= 0 && newLeft <= winWidth - dialog.offsetWidth) {
-                dialog.style.left = newLeft + "px";
-            }
-        }
-
-        function closeDragElement() {
-            document.onmouseup = null;
-            document.onmousemove = null;
-        }
-
-        function hideDialog() {
-            var dialog = document.getElementById('dialog');
-            dialogContent.textContent = messages[counter % messages.length];
-            counter++;
-            dialog.style.display = 'none';
-        }
-
-        var counter = 0;
-        var isOpen = false
-        let closeTimer = null;
-        var messages = ['Who are you——？', '有秘密的神主最洋气♪', '我可是天才神主呢','请多多支持旅之木香苗'];
-        var dialogueContent = document.getElementById('dialogContent');
-
-        function showBuble() {
-            var buble = document.getElementById('dialogue-buble');
-            buble.style.visibility = 'visible';
-            dialogueContent.textContent = messages[counter % messages.length];
-            counter++;
-            isOpen = true;
-        }
-
-        function startTimer() {
-            if (closeTimer) {
-                clearTimeout(closeTimer);
-            }
-
-            timer = setTimeout(function () {
-                var buble = document.getElementById('dialogue-buble');
-                buble.style.visibility = 'hidden';
-                isOpen = false;
-            }, 2000);
-        }
-    </script>
-
-    <script>
-        const container = document.getElementById('container');
-        let elements = [];
-
-        function createRandomAngleAndVelocity() {
-            const angle = Math.random() * -180;
-            const velocity = Math.random() * 20 + 1000;
-            return { angle, velocity };
-        }
-
-        function emitElement() {
-            if (elements.length < 100) {
-                const newElement = document.createElement('div');
-                newElement.classList.add('element');
-                newElement.style.position = 'absolute';
-                newElement.style.left = '35%';
-                newElement.style.top = '50%';
-
-                container.appendChild(newElement);
-                elements.push(newElement);
-
-                const { angle, velocity } = createRandomAngleAndVelocity();
-                const radian = angle * (Math.PI / 180); // 角度转弧度
-                const dx = Math.cos(radian) * velocity;
-                const dy = Math.sin(radian) * velocity;
-
-                newElement.animate([
-                    { transform: 'translate(0, 0)' },
-                    { transform: `translate(${dx}px, ${dy}px)` }
-                ], {
-                    duration: 1000,
-                    fill: 'forwards'
-                });
-
-                setTimeout(() => {
-                    container.removeChild(newElement);
-                    elements = elements.filter(el => el !== newElement);
-                }, 1000);
-            }
-        }
-
-        emitButton.addEventListener('click', emitElement);
-    </script>
-</body>
-
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>
